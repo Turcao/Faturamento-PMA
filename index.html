@@ -8,6 +8,12 @@
     body { background-color: #f4f4f9; margin: 0; padding: 20px; color: #333; }
     .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
+    /* Menu de Navegação Superior */
+    .nav-menu { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .nav-link { padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 13px; background: #e2e8f0; color: #4a5568; transition: 0.2s; }
+    .nav-link.active { background: #6b46c1; color: #fff; }
+    .nav-link:hover:not(.active) { background: #cbd5e0; }
+
     /* Cabeçalho */
     .header { text-align: center; border-bottom: 2px solid #6b46c1; padding-bottom: 15px; margin-bottom: 20px; }
     .header h1 { margin: 0; color: #6b46c1; font-size: 28px; letter-spacing: 2px; }
@@ -17,7 +23,7 @@
     .form-group { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
     .input-box { flex: 1; min-width: 180px; }
     .input-box label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
-    .input-box input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .input-box input, .input-box textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
 
     /* Tabela de Fechamento */
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -42,19 +48,21 @@
     .btn { background: #6b46c1; color: #fff; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     .btn:hover { background: #553c9a; }
     .btn-danger { background: #e53e3e; padding: 4px 8px; font-size: 11px; }
-    .btn-danger:hover { background: #c53030; }
+    .btn-clear { background: #718096; }
+    .btn-clear:hover { background: #4a5568; }
     .actions { margin-top: 20px; display: flex; justify-content: space-between; gap: 10px; }
 
     /* Assinatura */
-    .signature { display: none; margin-top: 45px; text-align: center; }
+    .signature { display: none; margin-top: 40px; text-align: center; }
     .signature-line { border-top: 1px solid #000; width: 280px; margin: 0 auto 5px; }
 
     /* REGRA DE IMPRESSÃO */
     @media print {
-      body { background: #fff; padding: 0; }
+      @page { margin: 10mm; }
+      body { background: #fff; padding: 0; margin: 0; }
       .container { box-shadow: none; padding: 0; width: 100%; max-width: 100%; }
-      .no-print, .btn-danger, .col-acao { display: none !important; }
-      input { border: none !important; font-weight: bold; padding: 0 !important; background: transparent !important; }
+      .no-print, .btn-danger, .col-acao, .nav-menu { display: none !important; }
+      input, textarea { border: none !important; font-weight: bold; padding: 0 !important; background: transparent !important; resize: none; }
       .grid-input { text-align: left; }
       .text-center-print { text-align: center !important; }
       .signature { display: block; }
@@ -64,6 +72,12 @@
 <body>
 
 <div class="container">
+  <!-- Menu de Navegação -->
+  <div class="nav-menu no-print">
+    <a href="index.html" class="nav-link">📄 Ficha de Entrega</a>
+    <a href="fechamento.html" class="nav-link active">💰 Fechamento / Cobrança</a>
+  </div>
+
   <!-- Cabeçalho -->
   <div class="header">
     <h1>PMA</h1>
@@ -74,7 +88,7 @@
   <div class="form-group">
     <div class="input-box" style="flex: 2;">
       <label>Nome do Cliente:</label>
-      <input type="text" id="cliente" placeholder="Nome do Cliente">
+      <input type="text" id="cliente" placeholder="Nome do Cliente" oninput="atualizarTitulo()">
     </div>
     <div class="input-box">
       <label>Data do Fechamento:</label>
@@ -82,7 +96,7 @@
     </div>
   </div>
 
-  <!-- Tabela do Fechamento com Coluna de Loja -->
+  <!-- Tabela do Fechamento -->
   <table id="tabela-fechamento">
     <thead>
       <tr>
@@ -96,9 +110,7 @@
         <th class="col-acao no-print">Ação</th>
       </tr>
     </thead>
-    <tbody id="corpo-tabela">
-      <!-- Linhas entram via JS -->
-    </tbody>
+    <tbody id="corpo-tabela"></tbody>
     <tfoot>
       <tr class="total-row">
         <td colspan="4" style="text-align: right; padding-right: 10px;">TOTAIS:</td>
@@ -110,13 +122,24 @@
     </tfoot>
   </table>
 
-  <!-- Botões de Ação -->
-  <div class="actions no-print">
-    <button class="btn" onclick="adicionarLinha()">+ Adicionar Item</button>
-    <button class="btn" onclick="window.print()" style="background-color: #2b6cb0;">🖨️ Imprimir / Salvar PDF</button>
+  <!-- Campo de Observações -->
+  <div class="form-group" style="margin-top: 20px;">
+    <div class="input-box">
+      <label>Observações / Condições de Pagamento:</label>
+      <textarea id="obs" rows="2" placeholder="Ex: Pagamento via Pix para 15 dias. Chave Pix: 000.000.000-00"></textarea>
+    </div>
   </div>
 
-  <!-- Campo para Assinatura/Conferência -->
+  <!-- Botões de Ação -->
+  <div class="actions no-print">
+    <div>
+      <button class="btn" onclick="adicionarLinha()">+ Adicionar Item</button>
+      <button class="btn btn-clear" onclick="limparTudo()">🧹 Limpar</button>
+    </div>
+    <button class="btn" onclick="window.print()" style="background-color: #2b6cb0;">🖨️ Imprimir / PDF</button>
+  </div>
+
+  <!-- Campo para Assinatura -->
   <div class="signature">
     <div class="signature-line"></div>
     <p>De acordo / Assinatura do Cliente</p>
@@ -124,10 +147,13 @@
 </div>
 
 <script>
-  // Data de hoje automática
   document.getElementById('data').valueAsDate = new Date();
 
-  // Adiciona nova linha de fechamento
+  function atualizarTitulo() {
+    const cliente = document.getElementById('cliente').value || 'Cliente';
+    document.title = `Fechamento_${cliente}`;
+  }
+
   function adicionarLinha(corte = '', loja = '', ref = '', oc = '', qtd = '', valorUnit = '') {
     const tbody = document.getElementById('corpo-tabela');
     const tr = document.createElement('tr');
@@ -147,17 +173,12 @@
     calcularTotais();
   }
 
-  function removerLinha(btn) {
-    btn.closest('tr').remove();
-    calcularTotais();
-  }
+  function removerLinha(btn) { btn.closest('tr').remove(); calcularTotais(); }
 
-  // Formata número para moeda brasileira (R$)
   function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  // Faz o cálculo automático de cada linha e dos totais gerais
   function calcularTotais() {
     const linhas = document.querySelectorAll('#corpo-tabela tr');
     let totalPecasGeral = 0;
@@ -166,7 +187,6 @@
     linhas.forEach(linha => {
       const qtd = parseFloat(linha.querySelector('.input-qtd').value) || 0;
       const unit = parseFloat(linha.querySelector('.input-unit').value) || 0;
-      
       const subtotal = qtd * unit;
       
       linha.querySelector('.subtotal-linha').innerText = formatarMoeda(subtotal);
@@ -179,7 +199,16 @@
     document.getElementById('total-financeiro').innerText = formatarMoeda(valorTotalGeral);
   }
 
-  // Linhas iniciais de exemplo (uma com loja e outra sem)
+  function limparTudo() {
+    if(confirm("Tem certeza que deseja limpar todo o fechamento?")) {
+      document.getElementById('cliente').value = '';
+      document.getElementById('obs').value = '';
+      document.getElementById('corpo-tabela').innerHTML = '';
+      adicionarLinha();
+      calcularTotais();
+    }
+  }
+
   adicionarLinha('Camiseta Baby Look', 'Loja Matriz', 'Lote 10', 'OC-12', 60, 2.50);
   adicionarLinha('Camiseta Baby Look', 'Loja Shopping', 'Lote 10', 'OC-13', 40, 2.50);
 </script>
