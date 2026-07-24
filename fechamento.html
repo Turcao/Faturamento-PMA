@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>PMA Acabamentos - Fechamento de Serviço</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f4f9; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    
+    /* Cabeçalho */
+    .header { text-align: center; border-bottom: 2px solid #6b46c1; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h1 { margin: 0; color: #6b46c1; font-size: 28px; letter-spacing: 2px; }
+    .header p { margin: 5px 0 0; color: #666; font-weight: 500; letter-spacing: 1px; }
+
+    /* Campos de Entrada do Topo */
+    .form-group { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+    .input-box { flex: 1; min-width: 180px; }
+    .input-box label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+    .input-box input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+
+    /* Tabela de Fechamento */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 13px; }
+    th { background-color: #f8f8f8; color: #333; font-weight: bold; }
+    .col-desc { width: 22%; text-align: left; }
+    .col-loja { width: 16%; text-align: left; }
+    .col-text { width: 13%; text-align: left; }
+    .col-num { width: 11%; }
+    .col-subtotal { width: 14%; font-weight: bold; background-color: #fafafa; }
+    .col-acao { width: 40px; text-align: center; }
+
+    /* Inputs da Tabela */
+    .grid-input { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .grid-input:focus { border-color: #6b46c1; outline: none; background-color: #f0ebf8; }
+
+    /* Rodapé dos Totais */
+    .total-row { font-weight: bold; background-color: #f0ebf8; font-size: 15px; }
+    .total-destaque { color: #6b46c1; font-size: 16px; }
+
+    /* Botões */
+    .btn { background: #6b46c1; color: #fff; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn:hover { background: #553c9a; }
+    .btn-danger { background: #e53e3e; padding: 4px 8px; font-size: 11px; }
+    .btn-danger:hover { background: #c53030; }
+    .actions { margin-top: 20px; display: flex; justify-content: space-between; gap: 10px; }
+
+    /* Assinatura */
+    .signature { display: none; margin-top: 45px; text-align: center; }
+    .signature-line { border-top: 1px solid #000; width: 280px; margin: 0 auto 5px; }
+
+    /* REGRA DE IMPRESSÃO */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .container { box-shadow: none; padding: 0; width: 100%; max-width: 100%; }
+      .no-print, .btn-danger, .col-acao { display: none !important; }
+      input { border: none !important; font-weight: bold; padding: 0 !important; background: transparent !important; }
+      .grid-input { text-align: left; }
+      .text-center-print { text-align: center !important; }
+      .signature { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Cabeçalho -->
+  <div class="header">
+    <h1>PMA</h1>
+    <p>ACABAMENTOS — FECHAMENTO DE SERVIÇO</p>
+  </div>
+
+  <!-- Dados Gerais do Cliente -->
+  <div class="form-group">
+    <div class="input-box" style="flex: 2;">
+      <label>Nome do Cliente:</label>
+      <input type="text" id="cliente" placeholder="Nome do Cliente">
+    </div>
+    <div class="input-box">
+      <label>Data do Fechamento:</label>
+      <input type="date" id="data">
+    </div>
+  </div>
+
+  <!-- Tabela do Fechamento com Coluna de Loja -->
+  <table id="tabela-fechamento">
+    <thead>
+      <tr>
+        <th class="col-desc">Descrição do Corte / Item</th>
+        <th class="col-loja">Loja / Destino</th>
+        <th class="col-text">Ref. Cliente</th>
+        <th class="col-text">OC</th>
+        <th class="col-num">Qtd (un)</th>
+        <th class="col-num">Valor Unit. (R$)</th>
+        <th class="col-subtotal">Valor Total (R$)</th>
+        <th class="col-acao no-print">Ação</th>
+      </tr>
+    </thead>
+    <tbody id="corpo-tabela">
+      <!-- Linhas entram via JS -->
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="4" style="text-align: right; padding-right: 10px;">TOTAIS:</td>
+        <td id="total-pecas" class="text-center-print">0 un</td>
+        <td>-</td>
+        <td id="total-financeiro" class="total-destaque text-center-print">R$ 0,00</td>
+        <td class="col-acao no-print"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Botões de Ação -->
+  <div class="actions no-print">
+    <button class="btn" onclick="adicionarLinha()">+ Adicionar Item</button>
+    <button class="btn" onclick="window.print()" style="background-color: #2b6cb0;">🖨️ Imprimir / Salvar PDF</button>
+  </div>
+
+  <!-- Campo para Assinatura/Conferência -->
+  <div class="signature">
+    <div class="signature-line"></div>
+    <p>De acordo / Assinatura do Cliente</p>
+  </div>
+</div>
+
+<script>
+  // Data de hoje automática
+  document.getElementById('data').valueAsDate = new Date();
+
+  // Adiciona nova linha de fechamento
+  function adicionarLinha(corte = '', loja = '', ref = '', oc = '', qtd = '', valorUnit = '') {
+    const tbody = document.getElementById('corpo-tabela');
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td class="col-desc"><input type="text" class="grid-input" placeholder="Ex: Baby Look Careca" value="${corte}"></td>
+      <td class="col-loja"><input type="text" class="grid-input" placeholder="Ex: Loja Centro (Opcional)" value="${loja}"></td>
+      <td class="col-text"><input type="text" class="grid-input" placeholder="Ex: Ref 10" value="${ref}"></td>
+      <td class="col-text"><input type="text" class="grid-input" placeholder="Ex: OC-502" value="${oc}"></td>
+      <td><input type="number" class="grid-input input-qtd text-center-print" min="0" value="${qtd}" oninput="calcularTotais()"></td>
+      <td><input type="number" step="0.01" class="grid-input input-unit text-center-print" min="0" placeholder="0,00" value="${valorUnit}" oninput="calcularTotais()"></td>
+      <td class="col-subtotal subtotal-linha text-center-print">R$ 0,00</td>
+      <td class="col-acao no-print"><button class="btn btn-danger" onclick="removerLinha(this)">X</button></td>
+    `;
+
+    tbody.appendChild(tr);
+    calcularTotais();
+  }
+
+  function removerLinha(btn) {
+    btn.closest('tr').remove();
+    calcularTotais();
+  }
+
+  // Formata número para moeda brasileira (R$)
+  function formatarMoeda(valor) {
+    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  // Faz o cálculo automático de cada linha e dos totais gerais
+  function calcularTotais() {
+    const linhas = document.querySelectorAll('#corpo-tabela tr');
+    let totalPecasGeral = 0;
+    let valorTotalGeral = 0;
+
+    linhas.forEach(linha => {
+      const qtd = parseFloat(linha.querySelector('.input-qtd').value) || 0;
+      const unit = parseFloat(linha.querySelector('.input-unit').value) || 0;
+      
+      const subtotal = qtd * unit;
+      
+      linha.querySelector('.subtotal-linha').innerText = formatarMoeda(subtotal);
+
+      totalPecasGeral += qtd;
+      valorTotalGeral += subtotal;
+    });
+
+    document.getElementById('total-pecas').innerText = totalPecasGeral + ' un';
+    document.getElementById('total-financeiro').innerText = formatarMoeda(valorTotalGeral);
+  }
+
+  // Linhas iniciais de exemplo (uma com loja e outra sem)
+  adicionarLinha('Camiseta Baby Look', 'Loja Matriz', 'Lote 10', 'OC-12', 60, 2.50);
+  adicionarLinha('Camiseta Baby Look', 'Loja Shopping', 'Lote 10', 'OC-13', 40, 2.50);
+</script>
+
+</body>
+</html>
